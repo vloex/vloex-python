@@ -7,7 +7,7 @@ setup(
     name="vloex",
     version="0.1.2",
     author="VLOEX",
-    author_email="support@vloex.com",
+    author_email="sats@vloex.com",
     description="VLOEX SDK - Video generation as a computing primitive",
     long_description=long_description,
     long_description_content_type="text/markdown",
