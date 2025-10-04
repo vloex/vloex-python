@@ -17,12 +17,14 @@ class VideoResource:
     def __init__(self, client: 'Vloex'):
         self._client = client
 
-    def create(self, script: str, **options) -> Dict:
+    def create(self, script: str, webhook_url: str = None, webhook_secret: str = None, **options) -> Dict:
         """
         Create a video from text
 
         Args:
             script: The text script for your video
+            webhook_url: Optional webhook URL to receive completion notification
+            webhook_secret: Optional secret for webhook HMAC signature
             **options: Optional settings (avatar, voice, background - coming soon)
 
         Returns:
@@ -30,13 +32,22 @@ class VideoResource:
 
         Example:
             video = vloex.videos.create(
-                script='Version 2.0 is live!'
+                script='Version 2.0 is live!',
+                webhook_url='https://your-app.com/webhook'
             )
         """
-        return self._client._request('POST', '/v1/generate', {
+        payload = {
             'input': script,
             'options': options
-        })
+        }
+
+        if webhook_url:
+            payload['webhook_url'] = webhook_url
+
+        if webhook_secret:
+            payload['webhook_secret'] = webhook_secret
+
+        return self._client._request('POST', '/v1/generate', payload)
 
     def retrieve(self, id: str) -> Dict:
         """
