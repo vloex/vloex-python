@@ -37,11 +37,7 @@ Create a video from text.
 
 **Arguments:**
 - `script` (str, required) - The text script for your video
-- `**options` (optional):
-  - `avatar` - Avatar to use (default: 'lily')
-  - `voice` - Voice tone (default: 'excited')
-  - `background` - Background setting (default: 'modern_office')
-  - `webhook_url` - URL to call when complete
+- `**options` (optional) - Coming soon: avatar, voice, background customization
 
 **Returns:** `dict` with `id` and `status`
 
@@ -68,17 +64,6 @@ video = vloex.videos.create(
 )
 ```
 
-### With options
-
-```python
-video = vloex.videos.create(
-    script='Check out our new features',
-    avatar='lily',
-    voice='professional',
-    background='modern_office'
-)
-```
-
 ### Wait for completion
 
 ```python
@@ -102,17 +87,6 @@ while True:
         break
 
     time.sleep(5)  # Wait 5s
-```
-
-### Using webhooks
-
-```python
-video = vloex.videos.create(
-    script='Product update',
-    webhook_url='https://yourapp.com/webhooks/vloex'
-)
-
-# VLOEX will POST to your webhook when done
 ```
 
 ## Error Handling
@@ -151,13 +125,13 @@ video: Dict[str, str] = vloex.videos.create(
 
 ## Documentation
 
-Full API documentation: https://docs.vloex.com
+Full API documentation: https://api.vloex.com/docs
 
 ## Support
 
 - GitHub: https://github.com/vloex/vloex-python
 - Email: support@vloex.com
-- Docs: https://docs.vloex.com
+- Docs: https://api.vloex.com/docs
 
 ## License
 
