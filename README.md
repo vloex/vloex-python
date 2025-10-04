@@ -50,7 +50,7 @@ Get video status and URL.
 
 **Returns:** `dict` with current status
 
-## Examples
+## Quick Examples
 
 ### Basic video generation
 
@@ -88,6 +88,23 @@ while True:
 
     time.sleep(5)  # Wait 5s
 ```
+
+### Real-World Examples
+
+See the [`examples/`](./examples) directory for complete, production-ready examples:
+
+- **[GitHub Release Videos](./examples/github-release-video.py)** - Automatically generate announcement videos from GitHub releases
+  ```python
+  # Fetch latest Next.js release and create video
+  release = requests.get('https://api.github.com/repos/vercel/next.js/releases/latest').json()
+  video = vloex.videos.create(script=f"Next.js {release['tag_name']} released!")
+  ```
+
+More examples coming soon:
+- CI/CD pipeline notifications
+- Product launch announcements
+- Automated social media content
+- Customer onboarding videos
 
 ## Error Handling
 
