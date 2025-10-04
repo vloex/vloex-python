@@ -83,17 +83,19 @@ video = vloex.videos.create(
 )
 ```
 
-### With Custom Options
+### With Custom Options (Coming Soon)
 
 ```python
 video = vloex.videos.create(
     script="Welcome to our product demo!",
     options={
-        'avatar': 'lily',         # Professional presenter
-        'voice': 'friendly',      # Warm tone
-        'background': 'modern_office'
+        'avatar': 'lily',              # Only supported avatar
+        'voice': 'enthusiastic',       # Only supported voice
+        'background': 'modern_office'  # Only supported background
     }
 )
+
+# More avatars, voices, and backgrounds coming soon!
 ```
 
 ### Using Environment Variables
@@ -131,11 +133,12 @@ Create a new video.
 
 **Parameters:**
 - `script` (str, required) - The text script for your video
-- `options` (dict, optional) - Customize avatar, voice, background
-  - `avatar`: `'lily'` (default), `'anna'`, `'tyler'`
-  - `voice`: `'excited'` (default), `'friendly'`, `'professional'`
-  - `background`: `'modern_office'` (default), `'conference_room'`, `'tech_office'`
 - `webhook_url` (str, optional) - URL to receive completion notification
+- `webhook_secret` (str, optional) - Secret for webhook HMAC signature
+- `options` (dict, optional) - Customize avatar, voice, background (coming soon)
+  - `avatar`: `'lily'` (only supported option)
+  - `voice`: `'enthusiastic'` (only supported option)
+  - `background`: `'modern_office'` (only supported option)
 
 **Returns:**
 ```python
