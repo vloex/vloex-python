@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="vloex",
-    version="0.1.3",
+    version="0.1.4",
     author="VLOEX",
     author_email="sats@vloex.com",
     description="VLOEX SDK - Video generation as a computing primitive",

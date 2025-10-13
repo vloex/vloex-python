@@ -3,7 +3,7 @@ VLOEX SDK Client
 Minimal, Stripe-style API
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import requests
 from .exceptions import VloexError
 
@@ -65,6 +65,74 @@ class VideoResource:
         """
         return self._client._request('GET', f'/v1/jobs/{id}/status')
 
+    def from_journey(
+        self,
+        screenshots: Optional[List[str]] = None,
+        descriptions: Optional[List[str]] = None,
+        product_url: Optional[str] = None,
+        pages: Optional[List[str]] = None,
+        product_context: str = None,
+        step_duration: int = 15,
+        avatar_position: str = 'bottom-right',
+        tone: str = 'professional',
+        **options
+    ) -> Dict:
+        """
+        Create product demo videos from screenshots or URLs
+
+        Level 1 - Provide screenshots + descriptions:
+            video = vloex.videos.from_journey(
+                screenshots=['base64img1...', 'base64img2...'],
+                descriptions=['Login page', 'Dashboard view'],
+                product_context='My Product Demo'
+            )
+
+        Level 2 - Provide URL + pages:
+            video = vloex.videos.from_journey(
+                product_url='https://myapp.com',
+                pages=['/', '/features', '/pricing'],
+                product_context='MyApp Website Tour'
+            )
+
+        Args:
+            screenshots: List of base64-encoded images (Level 1)
+            descriptions: Descriptions for each screenshot (Level 1)
+            product_url: Public URL to capture (Level 2)
+            pages: List of page paths like ['/dashboard', '/pricing'] (Level 2)
+            product_context: Description of what's being shown
+            step_duration: Seconds per screenshot (default: 15)
+            avatar_position: Avatar placement - 'bottom-right', 'bottom-left', 'top-right', 'top-left'
+            tone: Narration style - 'professional', 'casual', 'technical'
+            **options: Additional settings
+
+        Returns:
+            dict: Video generation result
+        """
+        if not product_context:
+            raise ValueError('product_context is required')
+
+        payload = {
+            'product_context': product_context,
+            'step_duration': step_duration,
+            'avatar_position': avatar_position,
+            'tone': tone,
+            **options
+        }
+
+        # Level 1: Screenshots + descriptions
+        if screenshots:
+            payload['screenshots'] = screenshots
+            if descriptions:
+                payload['descriptions'] = descriptions
+
+        # Level 2: URL + pages
+        if product_url:
+            payload['product_url'] = product_url
+            if pages:
+                payload['pages'] = pages
+
+        return self._client._request('POST', '/v1/videos/from-journey', payload)
+
 
 class Vloex:
     """VLOEX SDK Client"""
@@ -123,6 +191,18 @@ class Vloex:
                 'id': data.get('id'),
                 'status': data.get('status'),
                 'url': data.get('video_url') or data.get('url'),
+                'error': data.get('error_message') or data.get('error')
+            }
+
+        if '/from-journey' in path:
+            return {
+                'success': data.get('success'),
+                'video_path': data.get('video_path'),
+                'video_url': data.get('video_url'),
+                'duration_seconds': data.get('duration_seconds'),
+                'file_size_mb': data.get('file_size_mb'),
+                'cost': data.get('cost'),
+                'steps_count': data.get('steps_count'),
                 'error': data.get('error_message') or data.get('error')
             }
 

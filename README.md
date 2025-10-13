@@ -123,6 +123,28 @@ video = vloex.videos.create(
 # We'll POST to your webhook when the video is ready
 ```
 
+### Journey Videos (Product Demos)
+
+Create videos from screenshots or URLs:
+
+**Mode 1: Screenshots with Descriptions (Fastest)**
+```python
+video = vloex.videos.from_journey(
+    screenshots=['base64img1...', 'base64img2...'],
+    descriptions=['Login page', 'Dashboard overview'],
+    product_context='MyApp Demo'
+)
+```
+
+**Mode 2: URL + Page Paths (Public Pages)**
+```python
+video = vloex.videos.from_journey(
+    product_url='https://myapp.com',
+    pages=['/', '/features', '/pricing'],
+    product_context='MyApp Website Tour'
+)
+```
+
 ---
 
 ## 📚 API Reference
