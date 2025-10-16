@@ -17,23 +17,26 @@ class VideoResource:
     def __init__(self, client: 'Vloex'):
         self._client = client
 
-    def create(self, script: str, webhook_url: str = None, webhook_secret: str = None, **options) -> Dict:
+    def create(self, script: str, webhook_url: str = None, webhook_secret: str = None, idempotency_key: str = None, **options) -> Dict:
         """
-        Create a video from text
+        Create a video from text (async - returns immediately)
 
         Args:
             script: The text script for your video
-            webhook_url: Optional webhook URL to receive completion notification
-            webhook_secret: Optional secret for webhook HMAC signature
+            webhook_url: Webhook URL to receive completion notification (recommended)
+            webhook_secret: Secret for webhook HMAC signature
+            idempotency_key: Optional UUID to prevent duplicate charges on retry (e.g., str(uuid.uuid4()))
             **options: Optional settings (avatar, voice, background - coming soon)
 
         Returns:
-            dict: Video object with id and status
+            dict: Job object with id and status='queued'
 
         Example:
+            import uuid
             video = vloex.videos.create(
                 script='Version 2.0 is live!',
-                webhook_url='https://your-app.com/webhook'
+                webhook_url='https://your-app.com/webhook',
+                idempotency_key=str(uuid.uuid4())  # Optional: prevents duplicate charges
             )
         """
         payload = {
@@ -47,7 +50,7 @@ class VideoResource:
         if webhook_secret:
             payload['webhook_secret'] = webhook_secret
 
-        return self._client._request('POST', '/v1/generate', payload)
+        return self._client._request('POST', '/v1/generate', payload, idempotency_key=idempotency_key)
 
     def retrieve(self, id: str) -> Dict:
         """
@@ -75,38 +78,73 @@ class VideoResource:
         step_duration: int = 15,
         avatar_position: str = 'bottom-right',
         tone: str = 'professional',
+        webhook_url: str = None,
+        webhook_secret: str = None,
         **options
     ) -> Dict:
         """
-        Create product demo videos from screenshots or URLs
+        Create product demo videos from screenshots or URLs (ASYNC - returns immediately)
 
-        Level 1 - Provide screenshots + descriptions:
+        ⚠️  This endpoint is ASYNC - it returns a job_id immediately.
+        Video generation takes 8-12 minutes in the background.
+
+        Use webhooks (recommended) or poll /v1/jobs/{job_id}/status to get the final video URL.
+
+        **3 Modes Available:**
+
+        Mode 1A - Screenshots + Manual Descriptions:
             video = vloex.videos.from_journey(
                 screenshots=['base64img1...', 'base64img2...'],
-                descriptions=['Login page', 'Dashboard view'],
-                product_context='My Product Demo'
+                descriptions=['Login page walkthrough', 'Dashboard overview'],
+                product_context='My Product Demo',
+                webhook_url='https://your-app.com/webhook'
             )
 
-        Level 2 - Provide URL + pages:
+        Mode 1B - Screenshots Only (AI auto-generates narrations):
+            video = vloex.videos.from_journey(
+                screenshots=['base64img1...', 'base64img2...'],
+                product_context='My Product Demo',  # Omit descriptions for AI auto-narration
+                webhook_url='https://your-app.com/webhook'
+            )
+
+        Mode 2 - URL + Pages (Auto-capture + AI narration):
             video = vloex.videos.from_journey(
                 product_url='https://myapp.com',
                 pages=['/', '/features', '/pricing'],
-                product_context='MyApp Website Tour'
+                product_context='MyApp Website Tour',
+                webhook_url='https://your-app.com/webhook'
             )
 
         Args:
-            screenshots: List of base64-encoded images (Level 1)
-            descriptions: Descriptions for each screenshot (Level 1)
-            product_url: Public URL to capture (Level 2)
-            pages: List of page paths like ['/dashboard', '/pricing'] (Level 2)
-            product_context: Description of what's being shown
+            screenshots: List of base64-encoded images (Mode 1A/1B)
+            descriptions: Narration for each screenshot (Mode 1A). If omitted, AI auto-generates narrations (Mode 1B)
+            product_url: Public URL to capture (Mode 2)
+            pages: List of page paths like ['/dashboard', '/pricing'] (Mode 2)
+            product_context: Brief description of what you're demoing (e.g., "MyApp Dashboard", "ACME CRM Platform")
             step_duration: Seconds per screenshot (default: 15)
             avatar_position: Avatar placement - 'bottom-right', 'bottom-left', 'top-right', 'top-left'
             tone: Narration style - 'professional', 'casual', 'technical'
+            webhook_url: Your webhook URL to receive completion notification (recommended)
+            webhook_secret: Secret for HMAC signature verification
             **options: Additional settings
 
         Returns:
-            dict: Video generation result
+            dict: Job object with id and status='queued'
+                  {
+                      'id': 'job_abc123',
+                      'status': 'queued',
+                      'created_at': '2024-01-15T10:30:00Z'
+                  }
+
+        Webhook Payload (when complete):
+            {
+                "event": "video.completed",
+                "job_id": "job_abc123",
+                "status": "completed",
+                "video_url": "https://...",
+                "cost": 1.25,
+                "timestamp": "2024-01-15T10:42:00Z"
+            }
         """
         if not product_context:
             raise ValueError('product_context is required')
@@ -131,6 +169,12 @@ class VideoResource:
             if pages:
                 payload['pages'] = pages
 
+        # Webhook support
+        if webhook_url:
+            payload['webhook_url'] = webhook_url
+        if webhook_secret:
+            payload['webhook_secret'] = webhook_secret
+
         return self._client._request('POST', '/v1/videos/from-journey', payload)
 
 
@@ -152,7 +196,7 @@ class Vloex:
         self.base_url = base_url
         self.videos = VideoResource(self)
 
-    def _request(self, method: str, path: str, body: Optional[Dict] = None) -> Dict:
+    def _request(self, method: str, path: str, body: Optional[Dict] = None, idempotency_key: str = None) -> Dict:
         """Internal: Make HTTP request"""
         url = f'{self.base_url}{path}'
 
@@ -161,11 +205,19 @@ class Vloex:
             'Content-Type': 'application/json',
         }
 
+        # Add idempotency key if provided
+        if idempotency_key:
+            headers['Idempotency-Key'] = idempotency_key
+
+        # Set timeout - all endpoints now return immediately (async)
+        timeout = 60
+
         response = requests.request(
             method=method,
             url=url,
             headers=headers,
-            json=body
+            json=body,
+            timeout=timeout
         )
 
         try:
@@ -195,15 +247,12 @@ class Vloex:
             }
 
         if '/from-journey' in path:
+            # Now returns job status (async endpoint)
             return {
-                'success': data.get('success'),
-                'video_path': data.get('video_path'),
-                'video_url': data.get('video_url'),
-                'duration_seconds': data.get('duration_seconds'),
-                'file_size_mb': data.get('file_size_mb'),
-                'cost': data.get('cost'),
-                'steps_count': data.get('steps_count'),
-                'error': data.get('error_message') or data.get('error')
+                'id': data.get('id'),
+                'status': data.get('status'),
+                'created_at': data.get('created_at'),
+                'updated_at': data.get('updated_at')
             }
 
         return data
